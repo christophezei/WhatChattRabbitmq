@@ -1,7 +1,12 @@
 package com.rabitmq.chatapp.classes;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.concurrent.TimeoutException;
 
 import com.rabbitmq.client.Channel;
@@ -91,6 +96,47 @@ public class User implements IUser {
         };
         channel.basicConsume(queueName, true, deliverCallback, consumerTag -> { });
 		
+	}
+
+	@Override
+	public synchronized void writeToFile(String message) {
+		String userHome = createDirectory();
+		File log = new File(userHome + "/History.txt");
+		try {
+			PrintWriter writer = new PrintWriter(new FileWriter(log, true));
+			writer.println(message);
+			writer.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		
+	}
+
+	@Override
+	public String retreiveHistory(String absolutePath) {
+		String history = null;
+		try {
+			history = new String(Files.readAllBytes(Paths.get(absolutePath)), StandardCharsets.UTF_8);
+		} catch (IOException e) {
+			// can print any error
+		}
+		return history;
+	}
+	
+	private String createDirectory() {
+		boolean success = false;
+		String dir = System.getProperty("user.home");
+		String fullPath = dir + "/WhatChatMqHistory";
+		File directory = new File(fullPath);
+		if (directory.exists() && directory.isDirectory()) {
+			//System.out.println("Directory already exists ...");
+
+		} else {
+			//System.out.println("Directory not exists, creating now");
+			success = directory.mkdir();
+		}
+		return fullPath;
 	}
 
 }

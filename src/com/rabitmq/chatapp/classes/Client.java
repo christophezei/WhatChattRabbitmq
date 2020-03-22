@@ -22,6 +22,7 @@ public class Client implements Runnable  {
 	private User user;
 	private MessageModel message;
 	private Boolean isInPrivateChatMode = false;
+	private String dir;
 	
 
 	public enum MessageType{
@@ -32,9 +33,10 @@ public class Client implements Runnable  {
 	
 	protected Client(UserModel client) {
 		this.clientName = client.getUserName();
-		 user = new User();
-		 message = new MessageModel();
-		 factory = user.connectToServer(factory);
+		this.dir = System.getProperty("user.home");
+		user = new User();
+		message = new MessageModel();
+		factory = user.connectToServer(factory);
 		 
 	}
 
@@ -44,14 +46,19 @@ public class Client implements Runnable  {
 		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm:ss");
 		LocalDateTime now = LocalDateTime.now();
 		String messageBody;
+		String fullPath = dir + "/WhatChatMqHistory/History.txt";
+		
 		messageBody =" joined the chat room!";
 		MessageType messageType = MessageType.NONE;
-		System.out.println(" Global Chat Room. To exit press CTRL+C");
+		System.out.println(" Global Chat Room. To exit press CTRL+C\n To check your history enter the following command '/history' \n To chat privately enter '@usernameYouWantToChat' <message>");
 		this.constructMessage(clientName,"NONE", messageType ,messageBody, dtf.format(now).toString());
+		
 		initBindingForPrivComunication();
 		produceMessages();
+		
 		Scanner scanner = new Scanner(System.in);
 		consumeMessages();
+		
 		while(true) {
 			messageBody = scanner.nextLine();
 			if(messageBody.charAt(0) == '@') {
@@ -60,7 +67,14 @@ public class Client implements Runnable  {
 				
 			}else {
 				this.constructMessage(clientName,"BROADCAST", messageType.BROADCAST,messageBody, dtf.format(now).toString());
+				if(messageBody.charAt(0) != '/' && messageBody.charAt(0) != '@') {
+					user.writeToFile("[" + message.getSentTime()+ "]" + message.getMessageSender() + ":" + message.getMessageBody());
+				}
 			    produceMessages();
+			    if(messageBody.equals("/history")) {
+			    	String history = user.retreiveHistory(fullPath);
+			    	System.out.println("History since you joined is:\n" + history);
+			    }
 			}
 				
 		}

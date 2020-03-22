@@ -11,4 +11,6 @@ public interface IUser {
 	void  produceMessage(String exchangeName, MessageModel message, String exchangeType, ConnectionFactory factory) throws IOException, TimeoutException ;
 	void consumeMessage(ConnectionFactory factory,String exchangeName,String exchangeType, MessageModel message)throws IOException, TimeoutException;
 	void initMyOwenChannelBindingForPrivComunucation(ConnectionFactory factory,String exchangeName, String exchangeType,MessageModel message) throws IOException, TimeoutException ;
+	void writeToFile(String message);
+	String retreiveHistory(String absolutePath);
 }
