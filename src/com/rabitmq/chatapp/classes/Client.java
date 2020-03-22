@@ -18,12 +18,16 @@ public class Client implements Runnable  {
 	
 	private ConnectionFactory factory;
 	private String clientName = null;
-	private String EXCHANGE_NAME="Exchange_Broadcast_Channe";
+	private String EXCHANGE_NAME="topic_chat_";
 	private User user;
 	private MessageModel message;
-	private enum MessageType{
+	private Boolean isInPrivateChatMode = false;
+	
+
+	public enum MessageType{
 		BROADCAST,
-		PRIVATE
+		PRIVATE,
+		NONE
 	};
 	
 	protected Client(UserModel client) {
@@ -31,6 +35,7 @@ public class Client implements Runnable  {
 		 user = new User();
 		 message = new MessageModel();
 		 factory = user.connectToServer(factory);
+		 
 	}
 
 	
@@ -40,35 +45,57 @@ public class Client implements Runnable  {
 		LocalDateTime now = LocalDateTime.now();
 		String messageBody;
 		messageBody =" joined the chat room!";
-		MessageType messageType = MessageType.BROADCAST;
+		MessageType messageType = MessageType.NONE;
 		System.out.println(" Global Chat Room. To exit press CTRL+C");
-		this.constructMessage(clientName,"everyone", messageType ,messageBody, dtf.format(now).toString());
-		try {
-			user.produceMessage(EXCHANGE_NAME,message.getMessageSender() + message.getMessageBody(),"fanout", factory);
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (TimeoutException e) {
-			e.printStackTrace();
-		}
+		this.constructMessage(clientName,"NONE", messageType ,messageBody, dtf.format(now).toString());
+		initBindingForPrivComunication();
+		produceMessages();
 		Scanner scanner = new Scanner(System.in);
+		consumeMessages();
+		while(true) {
+			messageBody = scanner.nextLine();
+			if(messageBody.charAt(0) == '@') {
+				this.constructMessage(clientName,messageBody.substring(1), messageType.PRIVATE,messageBody, dtf.format(now).toString());
+				produceMessages();
+				
+			}else {
+				this.constructMessage(clientName,"BROADCAST", messageType.BROADCAST,messageBody, dtf.format(now).toString());
+			    produceMessages();
+			}
+				
+		}
+	}
+
+
+	private void consumeMessages() {
 		try {
-			user.consumeMessage(factory,EXCHANGE_NAME,"fanout");
+			user.consumeMessage(factory,EXCHANGE_NAME,"topic",message);
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		} catch (TimeoutException e1) {
 			e1.printStackTrace();
 		}
-		while(true) {
-			messageBody = scanner.nextLine();
-			this.constructMessage(clientName,"everyone", messageType.BROADCAST,messageBody, dtf.format(now).toString());
-		    try {
-				user.produceMessage(EXCHANGE_NAME,"[" + message.getSentTime()+ "]" + message.getMessageSender() + ":" + message.getMessageBody(),"fanout", factory);
-			} catch (IOException e) {
-				e.printStackTrace();
-			} catch (TimeoutException e) {
-				e.printStackTrace();
-			}
-				
+	}
+
+
+	private void produceMessages() {
+		try {
+			user.produceMessage(EXCHANGE_NAME,message,"topic", factory);
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (TimeoutException e) {
+			e.printStackTrace();
+		}
+	}
+
+
+	private void initBindingForPrivComunication() {
+		try {
+			message.setMessageSender(clientName);
+			user.initMyOwenChannelBindingForPrivComunucation(factory,EXCHANGE_NAME,"topic",message);
+		} catch (IOException | TimeoutException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
 		}
 	}
 	
@@ -78,5 +105,14 @@ public class Client implements Runnable  {
 		message.setMessageType(messageType);
 		message.setMessageBody(messageBody);
 		message.setSentTime(sentTime);		
+	}
+	
+	public Boolean getIsInPrivateChatMode() {
+		return isInPrivateChatMode;
+	}
+
+
+	public void setIsInPrivateChatMode(Boolean isInPrivateChatMode) {
+		this.isInPrivateChatMode = isInPrivateChatMode;
 	}
 }

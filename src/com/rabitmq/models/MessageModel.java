@@ -6,9 +6,7 @@ public class MessageModel {
 	private String messageBody;
 	private String sentTime;
 	private Enum messageType;
-	/*private DateTimeFormatter dateF = DateTimeFormatter.ofPattern("HH:mm:ss");
-	LocalDateTime now = LocalDateTime.now();*/
-	
+
 	public String getSentTime() {
 		return sentTime;
 	}
